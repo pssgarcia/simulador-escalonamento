@@ -7,9 +7,9 @@
 ## Estrutura do Projeto
 
 ```
-cpu-scheduler/
+simulador-escalonamento/
 ├── src/
-│   └── scheduler/
+│   └── escalonador/
 │       ├── Process.java                        # Estrutura de dados do processo
 │       ├── Metrics.java                        # Cálculo e exibição de métricas
 │       ├── Scheduler.java                      # Interface comum aos algoritmos
@@ -35,7 +35,7 @@ A partir da raiz do projeto:
 mkdir -p out
 
 # Compilar todos os arquivos Java
-javac -d out -sourcepath src src/scheduler/Main.java
+javac -d out -sourcepath src src/escalonador/Main.java
 ```
 
 ---
@@ -44,10 +44,10 @@ javac -d out -sourcepath src src/scheduler/Main.java
 
 ```bash
 # Usar o processos.txt padrão (na raiz do projeto)
-java -cp out scheduler.Main
+java -cp out escalonador.Main
 
 # Especificar outro arquivo de entrada
-java -cp out scheduler.Main caminho/outro_arquivo.txt
+java -cp out escalonador.Main caminho/outro_arquivo.txt
 ```
 
 ---
