@@ -1,5 +1,3 @@
-// Shortest Remaining Time First. Variante preemptiva do SJF. O escalonador sempre escolhe o processo que possui o menor tempo de execução restante
-
 package src.escalonador.algoritmos;
 
 import src.escalonador.Metrics;
@@ -22,10 +20,12 @@ import java.util.List;
  *   1. Processos bloqueados em I/O que atingiram ioReturnTime voltam
  *      para a fila de prontos.
  *   2. Processos que chegaram no tempo atual entram na fila de prontos.
- *   3. O escalonador seleciona o processo com menor remainingBurst
- *      (desempate por PID, igual ao FCFS).
- *   4. O processo em execução consome 1 unidade de CPU.
- *   5. Se atingiu um instante de I/O, bloqueia; se não tem mais burst, conclui.
+ *   3. Preempção: se algum processo da fila tem remainingBurst menor
+ *      que o atual, o atual volta para a fila e o menor assume a CPU.
+ *   4. Se a CPU estiver livre, escalona o processo com menor remainingBurst
+ *      (desempate por PID).
+ *   5. O processo em execução consome 1 unidade de CPU.
+ *   6. Se atingiu um instante de I/O, bloqueia; se não tem mais burst, conclui.
  */
 public class SRTF implements Scheduler {
 
@@ -43,7 +43,7 @@ public class SRTF implements Scheduler {
         // Processos concluídos (para cálculo de métricas)
         List<Process> completed = new ArrayList<>();
 
-        // Processos ainda não chegaram (ordenados por arrivalTime)
+        // Processos que ainda não chegaram (ordenados por arrivalTime)
         List<Process> notArrived = new ArrayList<>(processes);
         notArrived.sort(Comparator.comparingInt(Process::getArrivalTime));
 
@@ -70,25 +70,24 @@ public class SRTF implements Scheduler {
             // 2. Admite processos que chegam neste tick
             // ---------------------------------------------------------------
             for (Process p : new ArrayList<>(notArrived)) {
-                if (p.arrivalTime <= currentTime) {
+                if (p.getArrivalTime() <= currentTime) {
                     readyQueue.add(p);
                     notArrived.remove(p);
                 }
             }
 
             // ---------------------------------------------------------------
-            // 3. Preempção: se há processo rodando, verifica se algum da fila
-            //    tem burst menor. Se sim, devolve o atual para a fila.
+            // 3. Preempção: verifica se algum da fila tem burst menor que o atual
             // ---------------------------------------------------------------
-            if (running != null) {
+            if (running != null && !readyQueue.isEmpty()) {
                 Process shortest = readyQueue.stream()
                         .min(Comparator.comparingInt((Process p) -> p.remainingBurst)
                                 .thenComparingInt(Process::getPid))
                         .orElse(null);
 
                 if (shortest != null && shortest.remainingBurst < running.remainingBurst) {
-                    readyQueue.add(running);
-                    running = shortest;
+                    readyQueue.add(running);     // devolve o atual para a fila
+                    running = shortest;          // o mais curto assume a CPU
                     readyQueue.remove(shortest);
                 }
             }
@@ -111,19 +110,19 @@ public class SRTF implements Scheduler {
                 running.remainingBurst--;
                 running.accumulatedCpu++;
 
-                // ---------------------------------------------------------------
+                // -----------------------------------------------------------
                 // 5a. Verifica se atingiu um instante de I/O
-                // ---------------------------------------------------------------
-                if (running.nextIoIndex < running.ioInstants.size()
-                        && running.accumulatedCpu == running.ioInstants.get(running.nextIoIndex)) {
+                // -----------------------------------------------------------
+                if (running.nextIoIndex < running.getIoInstants().size()
+                        && running.accumulatedCpu == running.getIoInstants().get(running.nextIoIndex)) {
 
                     running.triggerIO(currentTime + 1);
                     blocked.add(running);
                     running = null;
 
-                // ---------------------------------------------------------------
+                // -----------------------------------------------------------
                 // 5b. Verifica se terminou todo o burst
-                // ---------------------------------------------------------------
+                // -----------------------------------------------------------
                 } else if (running.remainingBurst == 0) {
                     running.completionTime = currentTime + 1;
                     completed.add(running);
@@ -133,7 +132,7 @@ public class SRTF implements Scheduler {
 
             currentTime++;
 
-            // Guarda infinito: se não tem ninguém em lugar nenhum, encerra
+            // Guarda contra loop infinito: ninguém em lugar nenhum
             if (running == null && readyQueue.isEmpty()
                     && blocked.isEmpty() && notArrived.isEmpty()
                     && completed.size() < processes.size()) {
