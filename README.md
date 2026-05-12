@@ -117,5 +117,5 @@ PID;Chegada;BurstTotal;Prioridade;[IO1,IO2,...]
 
 - Pedro Soares de Souza Garcia
 - 
-- Gustavo Carvalho Ferreira Pinheiro
+-
 - 
