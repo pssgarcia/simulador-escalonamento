@@ -116,6 +116,6 @@ PID;Chegada;BurstTotal;Prioridade;[IO1,IO2,...]
 ## Integrantes do Grupo
 
 - Pedro Soares de Souza Garcia
-- Lucas Guimarães Pós
-- 
+- Lucas Guimarães Pós 
+- GustavoPinheiro
 - Lucas Alexandre Soares Gomes da Silva
