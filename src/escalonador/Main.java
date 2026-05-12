@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import src.escalonador.algoritmos.FCFS;
+import src.escalonador.algoritmos.MLQ;
+import src.escalonador.algoritmos.SRTF;
+
 /**
  * Ponto de entrada do simulador.
  * 
