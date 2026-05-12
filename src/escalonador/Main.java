@@ -3,6 +3,7 @@ package src.escalonador;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
+import src.escalonador.algoritmos.SRTF;
 
 /**
  * Ponto de entrada do simulador.

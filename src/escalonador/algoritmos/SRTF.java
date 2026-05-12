@@ -113,9 +113,7 @@ public class SRTF implements Scheduler {
                 // -----------------------------------------------------------
                 // 5a. Verifica se atingiu um instante de I/O
                 // -----------------------------------------------------------
-                if (running.nextIoIndex < running.getIoInstants().size()
-                        && running.accumulatedCpu == running.getIoInstants().get(running.nextIoIndex)) {
-
+                if ( running.shouldDoIO() ) {
                     running.triggerIO(currentTime + 1);
                     blocked.add(running);
                     running = null;
