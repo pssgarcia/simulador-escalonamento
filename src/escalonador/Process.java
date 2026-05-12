@@ -72,6 +72,20 @@ public class Process {
         return new Process(pid, arrivalTime, totalBurst, priority, ioInstants);
     }
 
+    // ---------------------------------------------------------------
+    // Lógica de I/O
+    // ---------------------------------------------------------------
+ 
+    /**
+     * Retorna true se o processo atingiu o próximo instante de I/O.
+     * Deve ser verificado sempre que accumulatedCpu é incrementado.
+     */
+    public boolean shouldDoIO() {
+        return nextIoIndex < ioInstants.size()
+            && accumulatedCpu >= ioInstants.get(nextIoIndex);
+    }
+ 
+
     /**
      * Dispara o próximo I/O: avança o índice e calcula o tempo de retorno.
      * 
