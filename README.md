@@ -118,4 +118,4 @@ PID;Chegada;BurstTotal;Prioridade;[IO1,IO2,...]
 - Pedro Soares de Souza Garcia
 - Lucas Guimarães Pós
 - 
-- 
+- Lucas Alexandre Soares Gomes da Silva
