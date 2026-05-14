@@ -1,11 +1,14 @@
 package src.escalonador;
 
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import src.escalonador.algoritmos.FCFS;
 import src.escalonador.algoritmos.MLQ;
+import src.escalonador.algoritmos.RoundRobin;
 import src.escalonador.algoritmos.SRTF;
 
 /**
@@ -23,6 +26,9 @@ import src.escalonador.algoritmos.SRTF;
 public class Main {
     
     public static void main(String[] args) {
+        System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
+        System.setErr(new PrintStream(System.err, true, StandardCharsets.UTF_8));
+
         String filename = (args.length > 0) ? args[0] : "processos.txt";
 
         // --- Leitura do arquivo ---
@@ -54,9 +60,9 @@ public class Main {
 
         // --- Executar cada algoritmo com uma cópia independente dos processos --- 
         System.out.println("\n RESULTADOS:\n");
-        System.out.printf("  %-38s | %-20s | %-22s | %s%n",
+        System.out.printf("  %-48s | %-20s | %-22s | %s%n",
             "Algoritmo", "Espera Média (ms)", "Turnaround Médio (ms)", "Vazão (proc/ut)");
-        System.out.println("  " + "-".repeat(110));
+        System.out.println("  " + "-".repeat(120));
 
         for (Scheduler scheduler : schedulers) {
             // Cópia fresca: cada algoritmo parte do zero
@@ -66,19 +72,19 @@ public class Main {
 
             try {
                 Metrics metrics = scheduler.run(processes);
-                System.out.printf("  %-38s | %20.2f | %22.2f | %.5f%n",
+                System.out.printf("  %-48s | %20.2f | %22.2f | %.5f%n",
                     metrics.getAlgorithmName(),
                     metrics.getAvgWaitTime(),
                     metrics.getAvgTurnaround(), 
                     metrics.getThroughput());
             } catch (UnsupportedOperationException e) {
-                System.out.printf("  %-38s | %s%n", scheduler.getName(), "[NÃO IMPLEMENTADO AINDA]");
+                System.out.printf("  %-48s | %s%n", scheduler.getName(), "[NÃO IMPLEMENTADO AINDA]");
             } catch (Exception e) {
-                System.out.printf("  %-38s | [ERRO: %s]%n", scheduler.getName(), e.getMessage());
+                System.out.printf("  %-48s | [ERRO: %s]%n", scheduler.getName(), e.getMessage());
             }
         }
 
-        System.out.println("  " + "-".repeat(110));
+        System.out.println("  " + "-".repeat(120));
         System.out.println();
     }
 }

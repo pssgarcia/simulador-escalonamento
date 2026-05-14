@@ -61,7 +61,7 @@ public class FileParser {
 
         List<Integer> ioInstants = new ArrayList<>();
         if (parts.length > 4 && !parts[4].trim().isEmpty()) {
-            for (String token : parts[4].trim().split(".")) {
+            for (String token : parts[4].trim().split(",")) {
                 int instant = Integer.parseInt(token.trim());
                 ioInstants.add(instant);
             }

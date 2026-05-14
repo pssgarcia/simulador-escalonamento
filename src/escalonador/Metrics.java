@@ -7,7 +7,7 @@ import java.util.List;
  * 
  * Métricas calculadas:
  *  - Tempo de Espera Médio (average wait time)
- *  - Tempo de Retorno Médio / Turnaround (average turnaorund)
+ *  - Tempo de Retorno Médio / Turnaround (average turnaround)
  *  - Vazão / Throughput (processos concluídos por unidade de tempo)
  */
 
@@ -65,7 +65,7 @@ public class Metrics {
     @Override
     public String toString() {
         return String.format(
-            "%-38s | Espera Média: %7.2f | Turnaorund Médio: %7.2f | Vazão: %.5f proc/ut",
+            "%-38s | Espera Média: %7.2f | Turnaround Médio: %7.2f | Vazão: %.5f proc/ut",
             algorithmName, avgWaitTime, avgTurnaround, throughput
         );
     }
