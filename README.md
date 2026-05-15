@@ -10,17 +10,17 @@
 simulador-escalonamento/
 ├── src/
 │   └── escalonador/
-│       ├── Process.java                        # Estrutura de dados do processo
-│       ├── Metrics.java                        # Cálculo e exibição de métricas
-│       ├── Scheduler.java                      # Interface comum aos algoritmos
-│       ├── FileParser.java                     # Leitura do processos.txt
-│       ├── Main.java                           # Ponto de entrada
-│       └── algorithms/
-│           ├── FCFS.java                       # First-Come, First-Served
-│           ├── SRTF.java                       # Shortest Remaining Time First
-│           ├── RoundRobinPrediction.java       # Round-Robin com Média Exponencial
-│           └── MLQ.java                        # Multilevel Queue
-├── processos.txt                               # Arquivo de entrada padrão
+│       ├── Process.java          # Dados estáticos + estado dinâmico de cada processo
+│       ├── Metrics.java          # Cálculo de espera média, turnaround e throughput
+│       ├── Scheduler.java        # Interface comum a todos os algoritmos (padrão Strategy)
+│       ├── FileParser.java       # Leitura e parse do processos.txt
+│       ├── Main.java             # Ponto de entrada: itera algoritmos e imprime tabela
+│       └── algoritmos/
+│           ├── FCFS.java         # First-Come, First-Served
+│           ├── SRTF.java         # Shortest Remaining Time First
+│           ├── RoundRobin.java   # Round-Robin com Média Exponencial
+│           └── MLQ.java          # Multilevel Queue (RR + FCFS)
+├── processos.txt                 # Arquivo de entrada padrão (100 processos)
 └── README.md
 ```
 
@@ -31,11 +31,11 @@ simulador-escalonamento/
 A partir da raiz do projeto:
 
 ```bash
-# Criar diretório de saída
-mkdir -p out
+# Criar diretório de saída (apenas na primeira vez)
+mkdir out
 
-# Compilar todos os arquivos Java
-javac -d out -sourcepath src src/escalonador/Main.java
+# Compilar
+javac -d out -sourcepath . src/escalonador/Main.java
 ```
 
 ---
@@ -44,10 +44,10 @@ javac -d out -sourcepath src src/escalonador/Main.java
 
 ```bash
 # Usar o processos.txt padrão (na raiz do projeto)
-java -cp out escalonador.Main
+java -cp out src.escalonador.Main
 
 # Especificar outro arquivo de entrada
-java -cp out escalonador.Main caminho/outro_arquivo.txt
+java -cp out src.escalonador.Main caminho/outro_arquivo.txt
 ```
 
 ---
@@ -77,45 +77,49 @@ PID;Chegada;BurstTotal;Prioridade;[IO1,IO2,...]
 
 ## Algoritmos Implementados
 
-| Algoritmo | Tipo | Responsável |
+| Algoritmo | Tipo | Decisão de escalonamento |
 |---|---|---|
-| FCFS (First-Come, First-Served) | Não-preemptivo | — |
-| SRTF (Shortest Remaining Time First) | Preemptivo | — |
-| Round-Robin com Predição (α=0.5, τ₀=10ms) | Preemptivo | — |
-| MLQ (RR quantum=4 + FCFS) | Preemptivo entre filas | — |
+| FCFS (First-Come, First-Served) | Não-preemptivo | Ordem de chegada; nunca interrompe |
+| SRTF (Shortest Remaining Time First) | Preemptivo | Menor `remainingBurst`; preempta se chegar alguém menor |
+| Round-Robin com Predição (α=0.5, τ₀=10ms) | Preemptivo | Fila circular; quantum = menor τ na fila |
+| MLQ (RR quantum=4 + FCFS) | Preemptivo entre filas | Fila 1 (prio=1) tem prioridade absoluta sobre Fila 2 |
 
 ---
 
 ## Decisões de Projeto
 
-### MLQ — Critério de distribuição de filas
-- **Prioridade 1:** Fila 1 (alta prioridade) — escalonada via Round-Robin
-- **Prioridade 2+:** Fila 2 (baixa prioridade) — escalonada via FCFS
-- Quantum fixo da Fila 1: **4 unidades de tempo**
+### Padrão Strategy
+A interface `Scheduler` define o contrato `run(List<Process>) → Metrics`. O `Main` não sabe qual algoritmo está rodando — apenas itera a lista e chama `run()`. Adicionar um novo algoritmo é criar uma classe e registrá-la em `Main.java`.
 
-### Round-Robin com Predição
-- Quantum recalculado a cada troca de contexto
-- Quantum = menor τ entre todos os processos na fila de prontos
-- τ atualizado pela Média Exponencial após cada surto: `τ_{n+1} = 0.5 * t_n + 0.5 * τ_n`
+### `Process.copy()`
+Cada algoritmo parte de um estado zerado. Sem `copy()`, o `remainingBurst`, `accumulatedCpu` e `tau` deixados pelo FCFS contaminariam o SRTF. O `copy()` cria uma instância nova com todos os campos dinâmicos resetados.
+
+### MLQ — `ArrayDeque` na Fila 2
+Quando a Fila 1 preempta um processo da Fila 2, ele precisa voltar ao *início* da fila (para preservar a ordem FCFS). `ArrayDeque` oferece `addFirst()` para isso; uma `Queue` comum só tem `add()`, que coloca no fim.
+
+### Round-Robin — Quantum dinâmico
+O quantum é recalculado a cada troca de contexto como o menor τ entre os processos na fila de prontos mais o processo em execução. O τ é atualizado pela Média Exponencial em três momentos: esgotamento de quantum, bloqueio em I/O e conclusão do processo.
 
 ---
 
 ## Resultados
 
-*(Preencher após implementação completa)*
+Entrada: `processos.txt` — 100 processos, chegadas de t=0 a t=248, bursts de 11 a 55ms, ~50% prio=1, ~50% prio=2.
 
-| Algoritmo | Espera Média | Turnaround Médio | Vazão |
-|---|---|---|---|
-| FCFS | — | — | — |
-| SRTF | — | — | — |
-| RR com Predição | — | — | — |
-| MLQ | — | — | — |
+| Algoritmo | Espera Média (ms) | Turnaround Médio (ms) | Vazão (proc/ut) |
+|---|---:|---:|---:|
+| FCFS | 1302,73 | 1335,81 | 0,03469 |
+| **SRTF** | **967,31** | **1000,39** | **0,03457** |
+| Round-Robin com Predição | 1978,39 | 2011,47 | 0,03469 |
+| MLQ | 1558,76 | 1591,84 | 0,03469 |
+
+**Análise:** O SRTF obteve a menor espera média (967ms), o que é esperado — SJF/SRTF é provadamente ótimo para minimizar tempo de espera médio. O Round-Robin com Predição teve a maior espera: com τ₀=10ms alto e processos de burst médio (~28ms), o quantum inicial grande favorece processos longos e causa overhead de context switch. O FCFS é previsível mas sofre com o efeito comboio. O MLQ favorece processos de prioridade 1, mas processos de prioridade 2 acumulam espera enquanto a Fila 1 não esvazia.
 
 ---
 
 ## Integrantes do Grupo
 
 - Pedro Soares de Souza Garcia
-- Lucas Guimarães Pós 
-- GustavoPinheiro
+- Lucas Guimarães Pós
+- Gustavo Pinheiro
 - Lucas Alexandre Soares Gomes da Silva
