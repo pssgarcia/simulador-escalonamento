@@ -7,12 +7,12 @@ import src.escalonador.Scheduler;
 import java.util.*;
 
 /**
- * MLQ — Multilevel Queue (Fila Multinível)
+ * MLQ -- Multilevel Queue (Fila Multinível)
  *
  * Duas filas estáticas com prioridades fixas. Processos NÃO migram entre filas.
  *
- *   Fila 1 (Alta Prioridade) — prioridade == 1 → Round-Robin, quantum fixo = 4
- *   Fila 2 (Baixa Prioridade) — prioridade >= 2 → FCFS
+ *   Fila 1 (Alta Prioridade) -- prioridade == 1 → Round-Robin, quantum fixo = 4
+ *   Fila 2 (Baixa Prioridade) -- prioridade >= 2 → FCFS
  *
  * Regras:
  *   - Fila 2 só executa quando a Fila 1 está completamente vazia.
@@ -33,23 +33,23 @@ import java.util.*;
 public class MLQ implements Scheduler {
 
     /** Quantum fixo da Fila 1 (Round-Robin de alta prioridade). */
-    private static final int QUANTUM_FILA1 = 4;
+    private static final int QUANTUM_QUEUE1 = 4;
 
     @Override
     public String getName() {
-        return "MLQ (Multilevel Queue — RR + FCFS)";
+        return "MLQ (Multilevel Queue -- RR + FCFS)";
     }
 
     /** Critério de distribuição: prioridade 1 → Fila 1; demais → Fila 2. */
-    private boolean isAltaPrioridade(Process p) {
+    private boolean isHighPriority(Process p) {
         return p.getPriority() == 1;
     }
 
     @Override
     public Metrics run(List<Process> processes) {
 
-        Queue<Process> fila1 = new LinkedList<>();  // Alta prioridade — Round-Robin
-        Deque<Process> fila2 = new ArrayDeque<>();  // Baixa prioridade — FCFS
+        Queue<Process> queue1 = new LinkedList<>();  // Alta prioridade -- Round-Robin
+        Deque<Process> queue2 = new ArrayDeque<>();  // Baixa prioridade -- FCFS
         //                     ^^ Deque permite addFirst() para preempção sem perder posição
 
         List<Process> completed  = new ArrayList<>();
@@ -64,29 +64,29 @@ public class MLQ implements Scheduler {
         while (completed.size() < processes.size()) {
 
             // ---------------------------------------------------------------
-            // 1. Libera processos que retornam do I/O — voltam para SUA fila original
+            // 1. Libera processos que retornam do I/O -- voltam para SUA fila original
             // ---------------------------------------------------------------
             for (Process p : new ArrayList<>(blocked)) {
                 if (p.ioReturnTime <= currentTime) {
                     p.finishIO();
-                    if (isAltaPrioridade(p)) {
-                        fila1.add(p);
+                    if (isHighPriority(p)) {
+                        queue1.add(p);
                     } else {
-                        fila2.addLast(p); // volta ao fim da Fila 2 (FCFS após I/O)
+                        queue2.addLast(p); // volta ao fim da Fila 2 (FCFS após I/O)
                     }
                     blocked.remove(p);
                 }
             }
 
             // ---------------------------------------------------------------
-            // 2. Admite processos que chegam — distribui por prioridade
+            // 2. Admite processos que chegam -- distribui por prioridade
             // ---------------------------------------------------------------
             for (Process p : new ArrayList<>(notArrived)) {
                 if (p.getArrivalTime() <= currentTime) {
-                    if (isAltaPrioridade(p)) {
-                        fila1.add(p);
+                    if (isHighPriority(p)) {
+                        queue1.add(p);
                     } else {
-                        fila2.addLast(p);
+                        queue2.addLast(p);
                     }
                     notArrived.remove(p);
                 }
@@ -97,8 +97,8 @@ public class MLQ implements Scheduler {
             //    Se um processo da Fila 2 está rodando e a Fila 1 ganhou processo,
             //    o processo da Fila 2 volta ao INÍCIO da sua fila (preserva FCFS)
             // ---------------------------------------------------------------
-            if (running != null && !isAltaPrioridade(running) && !fila1.isEmpty()) {
-                fila2.addFirst(running); // addFirst = devolve à frente da fila
+            if (running != null && !isHighPriority(running) && !queue1.isEmpty()) {
+                queue2.addFirst(running); // addFirst = devolve à frente da fila
                 running = null;
                 quantumLeft = 0;
             }
@@ -107,8 +107,8 @@ public class MLQ implements Scheduler {
             // 4. Preempção por quantum dentro da Fila 1:
             //    Quantum esgotado → processo volta ao FIM da Fila 1 (Round-Robin)
             // ---------------------------------------------------------------
-            if (running != null && isAltaPrioridade(running) && quantumLeft == 0) {
-                fila1.add(running); // addLast implícito — fim da fila
+            if (running != null && isHighPriority(running) && quantumLeft == 0) {
+                queue1.add(running); // addLast implícito -- fim da fila
                 running = null;
             }
 
@@ -116,11 +116,11 @@ public class MLQ implements Scheduler {
             // 5. Seleciona próximo processo (Fila 1 tem prioridade absoluta)
             // ---------------------------------------------------------------
             if (running == null) {
-                if (!fila1.isEmpty()) {
-                    running = fila1.poll();
-                    quantumLeft = QUANTUM_FILA1;
-                } else if (!fila2.isEmpty()) {
-                    running = fila2.poll();
+                if (!queue1.isEmpty()) {
+                    running = queue1.poll();
+                    quantumLeft = QUANTUM_QUEUE1;
+                } else if (!queue2.isEmpty()) {
+                    running = queue2.poll();
                     quantumLeft = Integer.MAX_VALUE; // FCFS: sem limite de quantum
                 }
             }
@@ -132,7 +132,7 @@ public class MLQ implements Scheduler {
                 running.remainingBurst--;
                 running.accumulatedCpu++;
                 // Só decrementa quantum se for processo da Fila 1 (evita overflow do MAX_VALUE)
-                if (isAltaPrioridade(running)) quantumLeft--;
+                if (isHighPriority(running)) quantumLeft--;
 
                 // ---------------------------------------------------------------
                 // 6a. Verifica se atingiu um instante de I/O
@@ -157,7 +157,7 @@ public class MLQ implements Scheduler {
             currentTime++;
 
             // Guarda contra loop infinito
-            if (running == null && fila1.isEmpty() && fila2.isEmpty()
+            if (running == null && queue1.isEmpty() && queue2.isEmpty()
                     && blocked.isEmpty() && notArrived.isEmpty()
                     && completed.size() < processes.size()) {
                 break;

@@ -6,9 +6,9 @@ import java.util.List;
  * Encapsula as métricas de desempenho de um algoritmo de escalonamento.
  * 
  * Métricas calculadas:
- *  - Tempo de Espera Médio (average wait time)
- *  - Tempo de Retorno Médio / Turnaround (average turnaround)
- *  - Vazão / Throughput (processos concluídos por unidade de tempo)
+ *  - Tempo de Espera Medio (average wait time)
+ *  - Tempo de Retorno Medio / Turnaround (average turnaround)
+ *  - Vazao / Throughput (processos concluídos por unidade de tempo)
  */
 
 public class Metrics {
@@ -65,7 +65,7 @@ public class Metrics {
     @Override
     public String toString() {
         return String.format(
-            "%-38s | Espera Média: %7.2f | Turnaround Médio: %7.2f | Vazão: %.5f proc/ut",
+            "%-38s | Espera Media: %7.2f | Turnaround Medio: %7.2f | Vazao: %.5f proc/ut",
             algorithmName, avgWaitTime, avgTurnaround, throughput
         );
     }

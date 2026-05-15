@@ -1,8 +1,6 @@
 package src.escalonador;
 
 import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,9 +24,6 @@ import src.escalonador.algoritmos.SRTF;
 public class Main {
     
     public static void main(String[] args) {
-        System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
-        System.setErr(new PrintStream(System.err, true, StandardCharsets.UTF_8));
-
         String filename = (args.length > 0) ? args[0] : "processos.txt";
 
         // --- Leitura do arquivo ---
@@ -61,7 +56,7 @@ public class Main {
         // --- Executar cada algoritmo com uma cópia independente dos processos --- 
         System.out.println("\n RESULTADOS:\n");
         System.out.printf("  %-48s | %-20s | %-22s | %s%n",
-            "Algoritmo", "Espera Média (ms)", "Turnaround Médio (ms)", "Vazão (proc/ut)");
+            "Algoritmo", "Espera Media (ms)", "Turnaround Medio (ms)", "Vazao (proc/ut)");
         System.out.println("  " + "-".repeat(120));
 
         for (Scheduler scheduler : schedulers) {

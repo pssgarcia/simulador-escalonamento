@@ -7,12 +7,12 @@ import src.escalonador.Scheduler;
 import java.util.*;
 
 /**
- * Round-Robin com Quantum por Predição (Média Exponencial)
+ * Round-Robin com Quantum por Predicao (Media Exponencial)
  *
  * Escalonamento circular onde o quantum NÃO é fixo: a cada troca de contexto,
  * o quantum é recalculado como o menor τ (tau) entre os processos na fila de prontos.
  *
- * Fórmula da Média Exponencial (atualizada após cada surto):
+ * Fórmula da Media Exponencial (atualizada após cada surto):
  *   τ_{n+1} = α * t_n + (1 - α) * τ_n
  *   α = 0.5,  τ_0 = 10ms (definido em Process.reset())
  *
@@ -32,7 +32,7 @@ public class RoundRobin implements Scheduler {
 
     @Override
     public String getName() {
-        return "Round-Robin com Predição (Média Exponencial)";
+        return "Round-Robin com Predicao (Media Exponencial)";
     }
 
     @Override
@@ -78,7 +78,7 @@ public class RoundRobin implements Scheduler {
             //    Atualiza τ e devolve o processo ao fim da fila (Round-Robin)
             // ---------------------------------------------------------------
             if (running != null && quantumLeft == 0) {
-                atualizarTau(running, currentBurstTime);
+                updateTau(running, currentBurstTime);
                 readyQueue.add(running);
                 running = null;
                 currentBurstTime = 0;
@@ -90,7 +90,7 @@ public class RoundRobin implements Scheduler {
             // ---------------------------------------------------------------
             if (running == null && !readyQueue.isEmpty()) {
                 running = readyQueue.poll();
-                quantumLeft = calcularQuantum(readyQueue, running);
+                quantumLeft = calculateQuantum(readyQueue, running);
                 currentBurstTime = 0;
             }
 
@@ -108,7 +108,7 @@ public class RoundRobin implements Scheduler {
                 //     Atualiza τ antes de bloquear (surto parcial também conta)
                 // ---------------------------------------------------------------
                 if (running.shouldDoIO()) {
-                    atualizarTau(running, currentBurstTime);
+                    updateTau(running, currentBurstTime);
                     running.triggerIO(currentTime + 1);
                     blocked.add(running);
                     running = null;
@@ -119,7 +119,7 @@ public class RoundRobin implements Scheduler {
                 // 5b. Verifica se terminou todo o burst
                 // ---------------------------------------------------------------
                 } else if (running.remainingBurst == 0) {
-                    atualizarTau(running, currentBurstTime);
+                    updateTau(running, currentBurstTime);
                     running.completionTime = currentTime + 1;
                     completed.add(running);
                     running = null;
@@ -146,7 +146,7 @@ public class RoundRobin implements Scheduler {
      * e todos os processos que estão na fila de prontos.
      * Mínimo de 1 para evitar quantum zero.
      */
-    private int calcularQuantum(Queue<Process> readyQueue, Process running) {
+    private int calculateQuantum(Queue<Process> readyQueue, Process running) {
         double minTau = running.tau;
         for (Process p : readyQueue) {
             if (p.tau < minTau) minTau = p.tau;
@@ -155,13 +155,10 @@ public class RoundRobin implements Scheduler {
     }
 
     /**
-     * Atualiza τ do processo usando a Média Exponencial.
+     * Atualiza τ do processo usando a Media Exponencial.
      * Chamado sempre que um surto termina (por quantum, I/O ou conclusão).
-     *
-     * @param process       processo cujo τ será atualizado
-     * @param realBurstTime duração real do surto que acabou (t_n)
      */
-    private void atualizarTau(Process process, int realBurstTime) {
+    private void updateTau(Process process, int realBurstTime) {
         process.tau = ALPHA * realBurstTime + (1 - ALPHA) * process.tau;
     }
 }
